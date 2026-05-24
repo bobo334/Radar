@@ -200,12 +200,15 @@ async def check_proxy(proxy: str, gateway: str | None, timeout: int, semaphore: 
             if status_code != 200:
                 return CheckResult(proxy=proxy, success=False, rtt=rtt)
             data = json.loads(body)
+            threat = data.get("threat")
+            scores = threat.get("scores") if isinstance(threat, dict) else None
+            asn = data.get("asn")
             return CheckResult(
                 proxy=proxy,
                 success=True,
                 country_code=data.get("country_code"),
-                trust_score=data.get("threat", {}).get("scores", {}).get("trust_score"),
-                asn_type=data.get("asn", {}).get("type"),
+                trust_score=scores.get("trust_score") if isinstance(scores, dict) else None,
+                asn_type=asn.get("type") if isinstance(asn, dict) else None,
                 ip=data.get("ip"),
                 rtt=rtt,
             )
