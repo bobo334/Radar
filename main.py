@@ -15,6 +15,7 @@ RESULT_DIR = "./result"
 FILE_MAP = {
     "premium": "premium_proxies.txt",
     "good": "good_proxies.txt",
+    "home": "home_proxies.txt",
     "normal": "normal_proxies.txt",
     "bad": "bad_proxies.txt",
     "cn": "cn_proxies.txt",
@@ -48,7 +49,7 @@ async def run(files: list[str], concurrency: int, timeout: int, gateway: str | N
     setup_result_dir()
 
     semaphore = asyncio.Semaphore(concurrency)
-    counts = {"premium": 0, "good": 0, "normal": 0, "bad": 0, "cn": 0, "failed": 0}
+    counts = {"premium": 0, "good": 0, "home": 0, "normal": 0, "bad": 0, "cn": 0, "failed": 0}
     buckets: dict[str, list[CheckResult]] = {k: [] for k in FILE_MAP}
     checked = 0
 

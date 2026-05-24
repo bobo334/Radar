@@ -7,8 +7,9 @@ class CheckResult:
     success: bool
     country_code: str | None = None
     trust_score: int | None = None
+    asn_type: str | None = None
     ip: str | None = None
-    rtt: int = 0  # milliseconds
+    rtt: int = 0
 
 
 def classify(result: CheckResult) -> str:
@@ -16,6 +17,8 @@ def classify(result: CheckResult) -> str:
         return "failed"
     if result.country_code == "CN":
         return "cn"
+    if result.asn_type == "isp":
+        return "home"
     score = result.trust_score or 0
     if score == 100:
         return "premium"
@@ -33,5 +36,4 @@ def format_line(result: CheckResult, level: str, label: str = "none") -> str:
     rtt = result.rtt
     if label == "roxy":
         return f"{result.proxy} {{CC: {cc}, rtt: {rtt}ms, lv: {level}}}"
-    # desc
     return f"{result.proxy} # CC: {cc}, rtt: {rtt}ms, lv: {level}"

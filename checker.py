@@ -44,7 +44,6 @@ def parse_proxy(proxy_url: str) -> dict:
 
 
 async def _connect_via_gateway(gateway: dict, target_host: str, target_port: int, timeout: int):
-    """Connect to target through the gateway proxy (HTTP CONNECT)."""
     reader, writer = await asyncio.wait_for(
         asyncio.open_connection(gateway["host"], gateway["port"]),
         timeout=timeout,
@@ -60,7 +59,6 @@ async def _connect_via_gateway(gateway: dict, target_host: str, target_port: int
 
 
 async def _socks5_handshake(reader, writer, target_host: str, target_port: int, username=None, password=None, timeout=10):
-    """Perform SOCKS5 handshake over an existing connection."""
     if username and password:
         writer.write(b"\x05\x02\x00\x02")
     else:
@@ -79,7 +77,6 @@ async def _socks5_handshake(reader, writer, target_host: str, target_port: int, 
             raise ConnectionError("SOCKS5 auth failed")
     elif resp[1] != 0x00:
         raise ConnectionError(f"SOCKS5 unsupported auth method: {resp[1]}")
-    # Connect request
     host_bytes = target_host.encode()
     writer.write(
         b"\x05\x01\x00\x03" + bytes([len(host_bytes)]) + host_bytes + struct.pack("!H", target_port)
@@ -98,7 +95,6 @@ async def _socks5_handshake(reader, writer, target_host: str, target_port: int, 
 
 
 async def _socks4_handshake(reader, writer, target_host: str, target_port: int, timeout=10):
-    """Perform SOCKS4 handshake over an existing connection."""
     import socket
     try:
         ip_bytes = socket.inet_aton(socket.gethostbyname(target_host))
@@ -116,7 +112,6 @@ async def _socks4_handshake(reader, writer, target_host: str, target_port: int, 
 
 
 async def _http_connect(reader, writer, target_host: str, target_port: int, timeout=10):
-    """Send HTTP CONNECT through an HTTP proxy."""
     connect_req = f"CONNECT {target_host}:{target_port} HTTP/1.1\r\nHost: {target_host}:{target_port}\r\n\r\n"
     writer.write(connect_req.encode())
     await writer.drain()
@@ -126,7 +121,6 @@ async def _http_connect(reader, writer, target_host: str, target_port: int, time
 
 
 async def _read_http_response(reader, timeout: int) -> tuple[int, str]:
-    """Read a full HTTP response and return (status_code, body)."""
     header_data = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), timeout=timeout)
     headers_text = header_data.decode(errors="ignore")
     status_line = headers_text.split("\r\n")[0]
@@ -178,7 +172,6 @@ async def check_proxy(proxy: str, gateway: str | None, timeout: int, semaphore: 
                     timeout=timeout,
                 )
 
-            # Step 2: Through test proxy, connect to ipdata API
             scheme = proxy_info["scheme"]
             if scheme in ("socks5", "socks5h"):
                 await _socks5_handshake(
@@ -190,7 +183,6 @@ async def check_proxy(proxy: str, gateway: str | None, timeout: int, semaphore: 
             else:
                 await _http_connect(reader, writer, API_HOST, 443, timeout)
 
-            # Step 3: TLS upgrade
             ssl_ctx = ssl.create_default_context()
             transport = writer.transport
             protocol = transport.get_protocol()
@@ -199,23 +191,21 @@ async def check_proxy(proxy: str, gateway: str | None, timeout: int, semaphore: 
             reader._transport = new_transport
             writer._transport = new_transport
 
-            # Step 4: Send HTTP request
             writer.write(REQUEST_TEMPLATE.encode())
             await writer.drain()
 
-            # Step 5: Read response
             status_code, body = await _read_http_response(reader, timeout)
             rtt = int((time.perf_counter() - t0) * 1000)
 
             if status_code != 200:
                 return CheckResult(proxy=proxy, success=False, rtt=rtt)
             data = json.loads(body)
-
             return CheckResult(
                 proxy=proxy,
                 success=True,
                 country_code=data.get("country_code"),
                 trust_score=data.get("threat", {}).get("scores", {}).get("trust_score"),
+                asn_type=data.get("asn", {}).get("type"),
                 ip=data.get("ip"),
                 rtt=rtt,
             )
