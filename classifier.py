@@ -17,13 +17,13 @@ def classify(result: CheckResult) -> str:
         return "failed"
     if result.country_code == "CN":
         return "cn"
+    if result.asn_type == "isp":
+        return "home"
     score = result.trust_score or 0
     if score == 100:
         return "premium"
     if score >= 60:
         return "good"
-    if result.asn_type == "isp":
-        return "home"
     if score >= 30:
         return "normal"
     return "bad"

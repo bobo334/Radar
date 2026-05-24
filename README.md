@@ -60,9 +60,9 @@ Lines starting with `#` are comments.
 
 | Level | Condition | Output |
 |-------|-----------|--------|
+| home | asn.type = isp | `home_proxies.txt` |
 | premium | trust_score = 100 | `premium_proxies.txt` |
 | good | trust_score >= 60 | `good_proxies.txt` |
-| home | asn.type = isp | `home_proxies.txt` |
 | normal | trust_score >= 30 | `normal_proxies.txt` |
 | bad | trust_score < 30 | `bad_proxies.txt` |
 | cn | country_code = CN | `cn_proxies.txt` |
